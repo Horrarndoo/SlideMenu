@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.zyw.horrarndoo.slidemenu.view.SlideFrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/sll_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@mipmap/main_background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <include layout="@layout/title_bar_layout"/>
+
+        <ListView
+            android:id="@+id/lv_main"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"/>
+    </LinearLayout>
+
+    <!--为了实现主界面变暗效果，给整个界面先加一层透明背景的view-->
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@mipmap/transparent"/>
+
+</com.zyw.horrarndoo.slidemenu.view.SlideFrameLayout>

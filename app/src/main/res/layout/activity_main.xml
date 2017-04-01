@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.zyw.horrarndoo.slidemenu.view.SlideMenu
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/slide_menu"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    tools:context="com.zyw.horrarndoo.slidemenu.MainActivity">
+
+    <include layout="@layout/layout_menu"/>
+
+    <include layout="@layout/layout_main"/>
+</com.zyw.horrarndoo.slidemenu.view.SlideMenu>
