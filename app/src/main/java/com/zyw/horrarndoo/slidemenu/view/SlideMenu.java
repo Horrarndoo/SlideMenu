@@ -30,6 +30,9 @@ public class SlideMenu extends FrameLayout {
     private IntEvaluator intEvaluator;//int的计算器
     private GestureDetectorCompat mGestureDetector;
 
+    private boolean isTouchDrag;//是否touch拖拽SlideMenu，因为放手之后存在一个弹回去的过程
+                                        //此时onViewPositionChanged一样会回调，需要区分自动弹回去还是touch拖动
+
     public SlideMenu(Context context) {
         this(context, null);
     }
@@ -47,7 +50,7 @@ public class SlideMenu extends FrameLayout {
      * 定义状态常量
      */
     public enum DragState {
-        Open, Close;
+        Open, Close
     }
 
     private DragState currentState = DragState.Close;//默认关闭
@@ -116,6 +119,7 @@ public class SlideMenu extends FrameLayout {
     public boolean onTouchEvent(MotionEvent event) {
         //由viewDragHelper处理touch事件
         viewDragHelper.processTouchEvent(event);
+
         //消费掉事件
         return true;
     }
@@ -132,6 +136,7 @@ public class SlideMenu extends FrameLayout {
          */
         @Override
         public boolean tryCaptureView(View child, int pointerId) {
+            isTouchDrag = true;
             return child == menuView || child == mainView;
         }
 
@@ -199,21 +204,13 @@ public class SlideMenu extends FrameLayout {
             float fraction = mainView.getLeft() / dragRange;
             //2.执行伴随动画
             executeAnim(fraction);
-            //3.更改状态，回调listener的方法
-            if (fraction == 0 && currentState != DragState.Close) {
-                //更改状态为关闭，并回调关闭的方法
-                currentState = DragState.Close;
-                if (listener != null)
-                    listener.onClose();
-            } else if (fraction == 1f && currentState != DragState.Open) {
-                //更改状态为打开，并回调打开的方法
-                currentState = DragState.Open;
-                if (listener != null)
-                    listener.onOpen();
-            }
-            //将drag的fraction暴漏给外界
-            if (listener != null) {
-                listener.onDrag(fraction);
+
+            //只有touch拖动view导致child位置变化时才回调onDrag
+            if(isTouchDrag) {
+                //将drag的fraction暴漏给外界
+                if (listener != null) {
+                    listener.onDrag(fraction);
+                }
             }
         }
 
@@ -227,6 +224,8 @@ public class SlideMenu extends FrameLayout {
          *              y方向移动的速度
          */
         public void onViewReleased(View releasedChild, float xvel, float yvel) {
+            isTouchDrag = false;
+
             if (mainView.getLeft() < dragRange / 2) {
                 //在左半边
                 close();
@@ -248,6 +247,12 @@ public class SlideMenu extends FrameLayout {
      * 打开菜单
      */
     public void close() {
+        //更改状态为关闭，并回调关闭的方法
+        if (listener != null) {
+            listener.onClose();
+            currentState = DragState.Close;
+        }
+
         viewDragHelper.smoothSlideViewTo(mainView, 0, mainView.getTop());
         ViewCompat.postInvalidateOnAnimation(SlideMenu.this);
     }
@@ -256,6 +261,13 @@ public class SlideMenu extends FrameLayout {
      * 打开菜单
      */
     public void open() {
+
+        //更改状态为打开，并回调打开的方法
+        if (listener != null) {
+            listener.onOpen();
+            currentState = DragState.Open;
+        }
+
         viewDragHelper.smoothSlideViewTo(mainView, (int) dragRange, mainView.getTop());
         ViewCompat.postInvalidateOnAnimation(SlideMenu.this);
     }
@@ -272,9 +284,14 @@ public class SlideMenu extends FrameLayout {
 
         //给mainView设置黑色的遮罩效果
         //实际上是设置mainView的表层ImageView颜色过滤效果，达到设置整个view黑色遮罩效果
-        iv_main_src.getBackground().setColorFilter((Integer) ColorUtil.evaluateColor(fraction, Color
-                        .TRANSPARENT,
-                Color.parseColor("#33000000")), PorterDuff.Mode.SCREEN);
+        try {
+            iv_main_src.getBackground().setColorFilter((Integer) ColorUtil.evaluateColor(fraction, Color
+                            .TRANSPARENT,
+                    Color.parseColor("#33000000")), PorterDuff.Mode.SCREEN);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
     }
 
     public void computeScroll() {
@@ -309,5 +326,13 @@ public class SlideMenu extends FrameLayout {
          * @param fraction
          */
         void onDrag(float fraction);
+    }
+
+    public void destory(){
+        try {
+            iv_main_src.getBackground().clearColorFilter();//清除黑色过滤效果
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 }

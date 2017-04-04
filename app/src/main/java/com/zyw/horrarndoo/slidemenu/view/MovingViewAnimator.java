@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.zyw.horrarndoo.slidemenu.animation;
+package com.zyw.horrarndoo.slidemenu.view;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -30,33 +30,36 @@ import android.view.animation.Interpolator;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Creates a custom animation.
- * There are 4 types: horizontal, vertical, diagonal and auto.
- * Auto adds all other 3 types.
- * Very beta stage yet!
- */
 public class MovingViewAnimator {
-
-    //movement type vars
+    /**
+     * 水平移动
+     */
     public static final int HORIZONTAL_MOVE = 1;
+    /**
+     * 垂直移动
+     */
     public static final int VERTICAL_MOVE = 2;
+    /**
+     * 对角线移动
+     */
     public static final int DIAGONAL_MOVE = 3;
+    /**
+     * 自动移动
+     */
     public static final int AUTO_MOVE = 0;
+    /**
+     * 不移动
+     */
     public static final int NONE_MOVE = -1;
 
-    //Animators and view vars
     private AnimatorSet mAnimatorSet;
-    private Animator.AnimatorListener animatorListener;
     private View mView;
 
-    //helper vars
     private boolean isRunning;
     private int currentLoop;
     private boolean infiniteRepetition = true;
     private ArrayList<Float> pathDistances;
 
-    //user vars
     private int loopCount = -1;
     private int movementType;
     private float offsetWidth, offsetHeight;
@@ -64,24 +67,28 @@ public class MovingViewAnimator {
     private long mDelay = 0;
     private Interpolator mInterpolator;
 
-    private Animator.AnimatorListener repeatAnimatorListener = new AnimatorListenerAdapter() {
+    private MovingState currentState = MovingState.stop;
+
+    public enum MovingState{
+        stop,
+        moving,
+        pause
+    }
+
+    private Animator.AnimatorListener animatorListener = new AnimatorListenerAdapter() {
         @Override
         public void onAnimationEnd(final Animator animation) {
             //super.onAnimationEnd(animation);
-            //View always in UI threat!
+            //运行在主线程
             mView.post((new Runnable() {
                 public void run() {
                     if (isRunning) {
                         if (infiniteRepetition) {
                             mAnimatorSet.start();
-                            if (animatorListener != null)
-                                animatorListener.onAnimationRepeat(animation);
                         } else {
                             currentLoop--;
                             if (currentLoop > 0) {
                                 mAnimatorSet.start();
-                                if (animatorListener != null)
-                                    animatorListener.onAnimationRepeat(animation);
                             }
                         }
                     }
@@ -89,7 +96,6 @@ public class MovingViewAnimator {
             }));
         }
     };
-
 
     public MovingViewAnimator(View imgView) {
         mView = imgView;
@@ -106,12 +112,11 @@ public class MovingViewAnimator {
 
     private void init() {
         setUpAnimator();
-        updateListener();
         setUpValues();
     }
 
     /**
-     * Sets the animation travel types.
+     * 根据移动类型设置不同的动画
      */
     private void setUpAnimator() {
         AnimatorSet animatorSet = new AnimatorSet();
@@ -147,30 +152,27 @@ public class MovingViewAnimator {
         mAnimatorSet = animatorSet;
     }
 
+    /**
+     * 设置参数数据
+     */
     private void setUpValues() {
-        addListener(animatorListener);
         setSpeed(mSpeed);
         setStartDelay(mDelay);
         setRepetition(loopCount);
         setInterpolator(mInterpolator);
     }
 
-    /**
-     * <code>AnimatorSet</code> doesn't have a reverse mode...
-     * Tricky but works.
-     */
-    private void updateListener() {
-        mAnimatorSet.addListener(repeatAnimatorListener);
+    private void setListener() {
+        mAnimatorSet.addListener(animatorListener);
     }
 
     /**
-     * Update animation base vars.
+     * 更新动画值.
      *
-     * @param type new movement type.
-     * @param w    new width offset.
-     * @param h    new height offset.
+     * @param type
+     * @param w
+     * @param h
      */
-
     public void updateValues(int type, float w, float h) {
         this.movementType = type;
         this.offsetWidth = w;
@@ -187,46 +189,64 @@ public class MovingViewAnimator {
     }
 
     public void start() {
+        //Log.e("tag", "start.");
         if (movementType != NONE_MOVE) {
             isRunning = true;
             if (!infiniteRepetition)
                 currentLoop = loopCount;
+            setListener();
             mAnimatorSet.start();
+            currentState = MovingState.moving;
         }
     }
 
     public void cancel() {
         if(isRunning) {
-            mAnimatorSet.removeListener(repeatAnimatorListener);
+            mAnimatorSet.removeListener(animatorListener);
             mAnimatorSet.cancel();
+            currentState = MovingState.stop;
         }
     }
 
     @TargetApi(19)
     public void pause() {
+        //Log.e("tag", "pause.");
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT)
             return;
 
-        if(mAnimatorSet.isStarted())
+        if(mAnimatorSet.isStarted()) {
             mAnimatorSet.pause();
+            currentState = MovingState.pause;
+        }
     }
 
     @TargetApi(19)
     public void resume() {
+        //Log.e("tag", "resume.");
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT)
             return;
 
-        if(mAnimatorSet.isPaused())
+        if(mAnimatorSet.isPaused()) {
             mAnimatorSet.resume();
+            currentState = MovingState.moving;
+        }
     }
 
     public void stop() {
+        //Log.e("tag", "stop.");
         isRunning = false;
-        mAnimatorSet.removeListener(repeatAnimatorListener);
+        mAnimatorSet.removeListener(animatorListener);
         mAnimatorSet.end();
         mView.clearAnimation();
+        currentState = MovingState.stop;
     }
 
+    /**
+     * 设置重复模式
+     * @param repetition
+     *              repetition < 0 循环播放
+     *              repetition > 0 循环repetition次
+     */
     public void setRepetition(int repetition) {
         if (repetition < 0)
             infiniteRepetition = true;
@@ -259,15 +279,19 @@ public class MovingViewAnimator {
         mAnimatorSet.setInterpolator(interpolator);
     }
 
+    /**
+     * 设置动画播放之前的延时时间
+     * @param time
+     */
     public void setStartDelay(long time) {
         mDelay = time;
         mAnimatorSet.setStartDelay(time);
     }
 
     /**
-     * For each animation child sets their duration using length/speed operation.
+     * 设置每个动画对应的持续时间
      *
-     * @param speed new speed.
+     * @param speed
      */
     public void setSpeed(int speed) {
         mSpeed = speed;
@@ -278,35 +302,45 @@ public class MovingViewAnimator {
         }
     }
 
-    public void addListener(Animator.AnimatorListener listener) {
-        clearListener();
-        if (listener != null) {
-            animatorListener = listener;
-            mAnimatorSet.addListener(animatorListener);
-        }
-    }
-
-    public void clearListener() {
-        if (animatorListener != null) {
-            mAnimatorSet.removeListener(animatorListener);
-            animatorListener = null;
-        }
-    }
-
+    /**
+     * 将速度设置值转换成秒
+     * @param distance
+     * @return
+     */
     private long parseSpeed(float distance) {
         return (long) ((distance / (float) mSpeed) * 1000f);
     }
 
+    /**
+     * 创建水平移动动画
+     * @param startValue
+     * @param endValue
+     * @return
+     */
     private ObjectAnimator createHorizontalAnimator(float startValue, float endValue) {
         pathDistances.add(Math.abs(startValue - endValue));
         return createObjectAnimation("scrollX", startValue, endValue);
     }
 
+    /**
+     * 创建垂直移动动画
+     * @param startValue
+     * @param endValue
+     * @return
+     */
     private ObjectAnimator createVerticalAnimator(float startValue, float endValue) {
         pathDistances.add(Math.abs(startValue - endValue));
         return createObjectAnimation("scrollY", startValue, endValue);
     }
 
+    /**
+     * 创建对角线移动动画
+     * @param startW
+     * @param endW
+     * @param startH
+     * @param endH
+     * @return
+     */
     private ObjectAnimator createDiagonalAnimator(float startW, float endW, float startH, float endH) {
         float diagonal = Pythagoras(Math.abs(startW - endW), Math.abs(startH - endH));
         pathDistances.add(diagonal);
@@ -328,7 +362,7 @@ public class MovingViewAnimator {
     }
 
     /**
-     * Class for create custom AUTO travel type regardless movementType var.
+     * 自定义自动移动方式
      */
     public class Builder {
 
@@ -384,11 +418,17 @@ public class MovingViewAnimator {
             stop();
             mAnimatorSet = new AnimatorSet();
             mAnimatorSet.playSequentially(mList);
-            updateListener();
+            setListener();
             setUpValues();
             MovingViewAnimator.this.start();
         }
-
     }
 
+    /**
+     * 获取当前状态
+     * @return
+     */
+    public MovingState getMovingState(){
+        return currentState;
+    }
 }

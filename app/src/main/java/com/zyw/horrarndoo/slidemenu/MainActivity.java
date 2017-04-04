@@ -4,6 +4,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
@@ -12,8 +13,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.zyw.horrarndoo.slidemenu.Utils.UIUtils;
-import com.zyw.horrarndoo.slidemenu.view.SlideMainAdapter;
+import com.zyw.horrarndoo.slidemenu.view.MovingImageView;
+import com.zyw.horrarndoo.slidemenu.view.MovingViewAnimator.MovingState;
 import com.zyw.horrarndoo.slidemenu.view.SlideFrameLayout;
+import com.zyw.horrarndoo.slidemenu.view.SlideMainAdapter;
 import com.zyw.horrarndoo.slidemenu.view.SlideMenu;
 
 import java.util.ArrayList;
@@ -26,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout ll_title;
     private TextView tv_title;
     private List<String> list = new ArrayList<>();
+    private MovingImageView miv;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,24 +43,31 @@ public class MainActivity extends AppCompatActivity {
         slideMenu.setOnDragStateChangeListener(new SlideMenu.OnDragStateChangeListener() {
             @Override
             public void onOpen() {
-                //Log.e("tag", "onOpen");
+                Log.e("tag", "onOpen");
+                if(miv.getMovingState() == MovingState.stop) {
+                    miv.startMoving();
+                }else if(miv.getMovingState() == MovingState.pause){
+                    miv.resumeMoving();
+                }
+                setOpenTitle();
             }
 
             @Override
             public void onDrag(float fraction) {
                 //Log.e("tag", "onDrag fraction:" + fraction);
                 if(fraction >= 0.6f){
-                    ll_title.setBackgroundColor(Color.WHITE);
-                    tv_title.setTextColor(Color.parseColor("#00ccff"));
+                    setOpenTitle();
                 }else{
-                    ll_title.setBackgroundColor(Color.parseColor("#00ccff"));
-                    tv_title.setTextColor(Color.WHITE);
+                    setCloseTitle();
                 }
+                miv.pauseMoving();
             }
 
             @Override
             public void onClose() {
-                //Log.e("tag", "onClose");
+                Log.e("tag", "onClose");
+                miv.stopMoving();
+                setCloseTitle();
             }
         });
 
@@ -70,6 +81,8 @@ public class MainActivity extends AppCompatActivity {
         ll_title = (LinearLayout) findViewById(R.id.ll_title);
         tv_title = (TextView) findViewById(R.id.tv_title);
         lv_main = (ListView) findViewById(R.id.lv_main);
+        miv = (MovingImageView) findViewById(R.id.miv_menu);
+
         initList();
         lv_main.setAdapter(new SlideMainAdapter(this, list));
         lv_main.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -79,6 +92,16 @@ public class MainActivity extends AppCompatActivity {
                         .LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void setOpenTitle(){
+        ll_title.setBackgroundColor(Color.WHITE);
+        tv_title.setTextColor(Color.parseColor("#00ccff"));
+    }
+
+    private void setCloseTitle(){
+        ll_title.setBackgroundColor(Color.parseColor("#00ccff"));
+        tv_title.setTextColor(Color.WHITE);
     }
 
     private void initList() {
@@ -99,5 +122,13 @@ public class MainActivity extends AppCompatActivity {
         if (actionBar != null) {
             actionBar.hide();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if(slideMenu != null){
+            slideMenu.destory();
+        }
+        super.onDestroy();
     }
 }

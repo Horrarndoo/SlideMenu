@@ -6,16 +6,16 @@
               android:orientation="vertical">
 
     <com.zyw.horrarndoo.slidemenu.view.MovingImageView
-        android:id="@+id/menu_image"
+        android:id="@+id/miv_menu"
         android:layout_width="match_parent"
         android:layout_height="250dp"
         android:src="@mipmap/menu_background"
-        app:miv_load_on_create="true"
+        app:miv_load_on_create="false"
         app:miv_max_relative_size="3.0"
         app:miv_min_relative_offset="0.2"
         app:miv_repetitions="-1"
         app:miv_speed="50"
-        app:miv_start_delay="1000"/>
+        app:miv_start_delay="100"/>
 
     <ListView
         android:id="@+id/lv_menu"

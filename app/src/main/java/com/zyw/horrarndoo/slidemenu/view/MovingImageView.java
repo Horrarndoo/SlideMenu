@@ -26,7 +26,7 @@ import android.util.AttributeSet;
 import android.widget.ImageView;
 
 import com.zyw.horrarndoo.slidemenu.R;
-import com.zyw.horrarndoo.slidemenu.animation.MovingViewAnimator;
+import com.zyw.horrarndoo.slidemenu.view.MovingViewAnimator.MovingState;
 
 
 /**
@@ -34,7 +34,6 @@ import com.zyw.horrarndoo.slidemenu.animation.MovingViewAnimator;
  */
 public class MovingImageView extends ImageView {
 
-    //control vars
     private float canvasWidth, canvasHeight;
     private float imageWidth, imageHeight;
     private float offsetWidth, offsetHeight;
@@ -55,7 +54,7 @@ public class MovingImageView extends ImageView {
     private int mSpeed;
     private long startDelay;
     private int mRepetitions;
-    private boolean loadOnCreate;
+    private boolean loadOnCreate;//load完毕后是否移动
 
     private MovingViewAnimator mAnimator;
 
@@ -113,7 +112,7 @@ public class MovingImageView extends ImageView {
         if (getDrawable() != null) {
             updateImageSize();
             updateOffsets();
-            updateAnimator();
+            updateAnimatorValues();
         }
     }
 
@@ -126,7 +125,7 @@ public class MovingImageView extends ImageView {
     }
 
     /**
-     * 更新偏移量，确定基本路径动画长度
+     * 更新偏移量，确定动画范围
      */
     private void updateOffsets() {
         float minSizeX = imageWidth * minRelativeOffset;
@@ -136,9 +135,9 @@ public class MovingImageView extends ImageView {
     }
 
     /**
-     * 更新动画
+     * 更新动画基本数据
      */
-    private void updateAnimator() {
+    private void updateAnimatorValues() {
         if (canvasHeight == 0 && canvasWidth == 0)
             return;
 
@@ -154,8 +153,9 @@ public class MovingImageView extends ImageView {
         mAnimator.setSpeed(mSpeed);
         mAnimator.setRepetition(mRepetitions);
 
-        if (loadOnCreate)
-            mAnimator.start();
+        if (loadOnCreate) {
+            startMoving();
+        }
     }
 
     /**
@@ -214,7 +214,7 @@ public class MovingImageView extends ImageView {
     /**
      * 禁止设置ScaleType
      *
-     * @param scaleType deprecated for force setup to ScaleType.Matrix
+     * @param scaleType
      */
     @Override
     @Deprecated
@@ -247,9 +247,9 @@ public class MovingImageView extends ImageView {
     }
 
     /**
-     * Returns the animator.
+     * 获取animator
      *
-     * @return Moving Animator.
+     * @return
      */
     public MovingViewAnimator getMovingAnimator() {
         return mAnimator;
@@ -261,7 +261,7 @@ public class MovingImageView extends ImageView {
 
     public void setMaxRelativeSize(float max) {
         maxRelativeSize = max;
-        updateAnimator();
+        updateAnimatorValues();
     }
 
     public float getMinRelativeOffset() {
@@ -270,7 +270,7 @@ public class MovingImageView extends ImageView {
 
     public void setMinRelativeOffset(float min) {
         minRelativeOffset = min;
-        updateAnimator();
+        updateAnimatorValues();
     }
 
     public boolean isLoadOnCreate() {
@@ -281,4 +281,49 @@ public class MovingImageView extends ImageView {
         this.loadOnCreate = loadOnCreate;
     }
 
+    /**
+     * 开始移动
+     * 默认不停的移动
+     */
+    public void startMoving() {
+        startMoving(-1);
+    }
+
+    /**
+     * 开始移动
+     * @param repetition 循环模式
+     */
+    public void startMoving(int repetition){
+        mAnimator.setRepetition(repetition);
+        mAnimator.start();
+    }
+
+    /**
+     * 恢复移动
+     */
+    public void resumeMoving(){
+        mAnimator.resume();
+    }
+
+    /**
+     * 暂停移动
+     */
+    public void pauseMoving(){
+        mAnimator.pause();
+    }
+
+    /**
+     * 停止移动
+     */
+    public void stopMoving(){
+        mAnimator.stop();
+    }
+
+    /**
+     * 获取当前状态
+     * @return
+     */
+    public MovingState getMovingState(){
+        return mAnimator.getMovingState();
+    }
 }
