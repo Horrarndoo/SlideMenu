@@ -285,6 +285,9 @@ public class SlideMenu extends FrameLayout {
         //给mainView设置黑色的遮罩效果
         //实际上是设置mainView的表层ImageView颜色过滤效果，达到设置整个view黑色遮罩效果
         try {
+//            iv_main_src.setBackgroundColor((Integer) ColorUtil.evaluateColor(fraction, Color
+//                            .TRANSPARENT,
+//                    Color.parseColor("#33000000")));
             iv_main_src.getBackground().setColorFilter((Integer) ColorUtil.evaluateColor(fraction, Color
                             .TRANSPARENT,
                     Color.parseColor("#33000000")), PorterDuff.Mode.SCREEN);
